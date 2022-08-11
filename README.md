@@ -59,26 +59,29 @@ In this particular case my order was fulfilled after 9.36s as such:
 }
 ```
 
-The data that was persisted to the database (stored locally as `database.db`) was as such:
-
-`fulfilled_orders` table:
-![fulfilled orders table summary](./assets/fulfilled_orders_table.png)
-
-`fulfilled_order_splits` table:
-![fulfilled order splits table summary](./assets/fulfilled_order_splits_table.png)
-
 **Note**: note that the exact response you get back will be heavily dependent on several factors:
 
 - current market
 - symbol, order size, and ask price you chose
 
+In addition, the data that was persisted to the database (stored locally as `database.db`) was as such:
+
+`fulfilled_orders` table:
+
+![fulfilled orders table summary](./assets/fulfilled_orders_table.png)
+
+`fulfilled_order_splits` table:
+
+![fulfilled order splits table summary](./assets/fulfilled_order_splits_table.png)
+
 ## Summary & Future Enhancements
 
-In total I spent ~5 hours on this challenge. I tackled this task by breaking it down into three main pieces:
+In total I spent ~5 hours on this challenge. I tackled this task by breaking it into the following main pieces:
 
+1. having a way to an easy way, for any new developer, to run the project locally
 1. the HTTP server
-2. the order fulfillment logic
-3. database persistence
+1. the order fulfillment logic
+1. database persistence
 
 The most obvious/first thing that I would tackle is the synchronous behavior of the current HTTP endpoint. Currently the user could wait up to a maximum of 30 seconds, this is not an ideal UX (configured with the `ORDER_TIMEOUT_SECONDS` environment variable, see `docker-compose.yml` for more details; this is the maximum amount of time the order executor will wait before considering an order "unfulfillable").
 
