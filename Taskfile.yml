@@ -1,0 +1,51 @@
+version: '3'
+
+tasks:
+  lint:
+    desc: Run `golangci-lint run` to lint the code
+    cmds:
+      - golangci-lint run -c .golangci.yml
+    summary: Lint the project with golangci-lint
+
+  fmt:
+    desc: Run `go fmt` to format the code
+    cmds:
+      - go fmt ./...
+    sources:
+      - ./**/*.go
+
+  test:
+    desc: Run the tests
+    cmds:
+      - go test ./...
+    sources:
+      - ./**/*.go
+
+  run:
+    desc: Run the service
+    cmds:
+      - docker-compose up
+
+  mod-tidy:
+    desc: Run 'go mod tidy' to clean up module files.
+    cmds:
+      - go mod tidy -v
+
+  lint-mod:
+    desc: Check go.mod is tidy
+    cmds:
+      - task: mod-tidy
+      - git diff --exit-code -- go.mod go.sum
+
+  build:
+    desc: Build main
+    cmds:
+      - go build cmd/service/main.go
+    sources:
+      - ./**/*.go
+      - go.mod
+
+  vendor:
+      desc: go mod vendor
+      cmds:
+        - go mod vendor

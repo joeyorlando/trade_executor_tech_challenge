@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  trade-executor-service:
+    container_name: trade-executor-service
+    build:
+      dockerfile: Dockerfile
+      context: .
+      target: dev
+    volumes:
+      - .:/opt/app/service
