@@ -89,16 +89,14 @@ func (b *Binance) FulfillLimitOrder(order LimitOrder) (orderSplits []OrderSplit,
 	}
 
 	go func() {
-		timeout := 0
+		timeoutCounter := 0
 
-		for !orderIsFulfilled(order, orderSplits) {
-			if orderIsFulfilled(order, orderSplits) || timeout > b.OrderExecutionTimeoutSeconds {
-				stopC <- struct{}{}
-			}
-
+		for !orderIsFulfilled(order, orderSplits) && timeoutCounter < b.OrderExecutionTimeoutSeconds {
 			time.Sleep(1 * time.Second)
-			timeout += 1
+			timeoutCounter += 1
 		}
+
+		stopC <- struct{}{}
 	}()
 
 	// block until either the order is fulfilled or it times out

@@ -2,9 +2,11 @@
 
 Built using Go 1.18.
 
-This repository houses a service that will "fulfill" (no actual orders placed.. for now) orders with Binance.
+This repository houses a service that will "fulfill" (no actual orders placed.. for now) orders with Binance and persist the fulfilled order details to a SQLite3 database.
 
 It exposes a single HTTP endpoint `POST /order/limit` that allows a user to consume the service. See [Using the Service](#using-the-service) for more details.
+
+See [Summary & Future Enhancements](#summary--future-enhancements) below for answers to the questions listed at the end of the `.pdf`.
 
 ## Local development
 
@@ -46,66 +48,57 @@ task lint
 ```bash
 $ curl --request POST \
     --url http://localhost:8080/order/limit \
-    --data '{"symbol": "LTCBTC", "order_size": 500, "price": 0.0001}'
+    --data '{"symbol": "LTCBTC", "order_size": 1000, "price": 0.0001}'
 ```
 
-In this particular case I got back an order fulfillment that looks as such:
+In this particular case my order was fulfilled after 9.36s as such:
 
 ```json
 {
-  "data": [
-    {
-      "update_id": 1742578110,
-      "bid_price": 0.002577,
-      "bid_quantity": 32.58
-    },
-    {
-      "update_id": 1742578110,
-      "bid_price": 0.002576,
-      "bid_quantity": 61.087
-    },
-    {
-      "update_id": 1742578110,
-      "bid_price": 0.002573,
-      "bid_quantity": 154.488
-    },
-    {
-      "update_id": 1742578110,
-      "bid_price": 0.002572,
-      "bid_quantity": 80.964
-    },
-    {
-      "update_id": 1742578110,
-      "bid_price": 0.002571,
-      "bid_quantity": 29.915
-    },
-    {
-      "update_id": 1742578110,
-      "bid_price": 0.002568,
-      "bid_quantity": 70.09
-    },
-    {
-      "update_id": 1742578110,
-      "bid_price": 0.00255,
-      "bid_quantity": 70.87599999999998
-    }
-  ],
-  "error": null,
-  "message": "Order successfully executed"
+  "message": "Order successfully fulfilled"
 }
 ```
 
+The data that was persisted to the database (stored locally as `database.db`) was as such:
+
+`fulfilled_orders` table:
+![fulfilled orders table summary](./assets/fulfilled_orders_table.png)
+
+`fulfilled_order_splits` table:
+![fulfilled order splits table summary](./assets/fulfilled_order_splits_table.png)
+
 **Note**: note that the exact response you get back will be heavily dependent on several factors:
 
-- current market stream
+- current market
 - symbol, order size, and ask price you chose
 
-## TODO
+## Summary & Future Enhancements
+
+In total I spent ~5 hours on this challenge. I tackled this task by breaking it down into three main pieces:
+
+1. the HTTP server
+2. the order fulfillment logic
+3. database persistence
+
+The most obvious/first thing that I would tackle is the synchronous behavior of the current HTTP endpoint. Currently the user could wait up to a maximum of 30 seconds, this is not an ideal UX (configured with the `ORDER_TIMEOUT_SECONDS` environment variable, see `docker-compose.yml` for more details; this is the maximum amount of time the order executor will wait before considering an order "unfulfillable").
+
+In my ideal architecture, the HTTP endpoint would simply throw the request details onto a RabbitMQ or Redis queue and the user would simply get back a very quick (<100ms) response letting them know that their order is being processed. There would be separate processes running that are consuming the events in these queues and actually processing the orders. The UI would have some sort of websocket mechanism setup to notify the user when the order fulfillment is actually finished.
+
+In addition some other minor, but still important, details that I would change are:
+
+- running the service on a k8s cluster. This would allow me to create `Service` and `HorizontalPodAutoscaler` resources to ensure scalability of this service
+- CI/CD - making sure to run the tests and linting on each PR commit. No PRs would be allowed to merge to `main` if a build is failing.
+- Integration tests - spin up the service on each CI build, and run a suite of integration tests against the fresh/local database
+- monitoring - I would setup Datadog to add enough metrics to have a consistent and reliable "heartbeat" on the service. In addition there would be PagerDuty alerts configured in Datadog to immediately alert the team in the event that certain metrics are outside configured thresholds
+- logging - exporting logs to a permanent solution which would make future analysis/debugging much easier (ex. Graylog)
+- tracing - implementing a tool such as HoneyComb, again this is something that would make performance monitoring and debugging much simpler
+
+## Still todo
 
 - [x] create an HTTP endpoint that executes an order (POST endpoint that takes a symbol, order size and price as input)
-- [x] connect to the binance order book ticker stream (https://binance-docs.github.io/apidocs/spot/en/#individual-symbol-book-ticker-streams)
+- [x] connect to the binance order book ticker stream
 - [x] write order fulfillment logic
-- [ ] write binance package unit tests
-- [ ] write to sqlite-db: output summary on how the order was split
-- [ ] write database package unit tests
-- [ ] add timeout to the trade execution
+- [x] add timeout to the trade execution
+- [x] write to sqlite-db: output summary on how the order was split
+- [ ] write unit tests
+- [ ] add comments to functions
