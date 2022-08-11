@@ -8,7 +8,10 @@ import (
 	"github.com/adshao/go-binance/v2"
 )
 
-type Binance struct{}
+type Binance struct {
+	// number of seconds that the executor will try to fulfill an order before giving up
+	OrderExecutionTimeoutSeconds int
+}
 
 type LimitOrder struct {
 	Symbol   string
@@ -22,8 +25,10 @@ type OrderSplit struct {
 	BidQuantity float64 `json:"bid_quantity"`
 }
 
-func NewBinance() Binance {
-	return Binance{}
+func NewBinance(orderExecutionTimeoutSeconds int) Binance {
+	return Binance{
+		OrderExecutionTimeoutSeconds: orderExecutionTimeoutSeconds,
+	}
 }
 
 func calculateOrderSplitsQuantity(orderSplits []OrderSplit) float64 {
@@ -58,9 +63,8 @@ func bidQuantityToTake(currentOrderSplits []OrderSplit, orderSize, bidQuantity f
 	return bidQuantity
 }
 
-func (b *Binance) ExecuteLimitOrder(order LimitOrder) (orderSplits []OrderSplit, err error) {
+func (b *Binance) FulfillLimitOrder(order LimitOrder) (orderSplits []OrderSplit, fulfilled bool, err error) {
 	wsDepthHandler := func(event *binance.WsDepthEvent) {
-		fmt.Println("event received: ", event)
 		for _, bid := range event.Bids {
 			if bidHasAcceptablePrice(order, bid) && !orderIsFulfilled(order, orderSplits) {
 				bidPrice, _ := strconv.ParseFloat(bid.Price, 64)
@@ -81,23 +85,27 @@ func (b *Binance) ExecuteLimitOrder(order LimitOrder) (orderSplits []OrderSplit,
 	})
 
 	if err != nil {
-		return orderSplits, err
+		return orderSplits, false, err
 	}
 
 	go func() {
-		time.Sleep(1 * time.Second)
+		timeout := 0
 
-		// use stopC to exit after the order has been filled
-		if orderIsFulfilled(order, orderSplits) {
-			stopC <- struct{}{}
+		for !orderIsFulfilled(order, orderSplits) {
+			if orderIsFulfilled(order, orderSplits) || timeout > b.OrderExecutionTimeoutSeconds {
+				stopC <- struct{}{}
+			}
+
+			time.Sleep(1 * time.Second)
+			timeout += 1
 		}
 	}()
 
-	// block until the order is executed
+	// block until either the order is fulfilled or it times out
 	<-doneC
 
 	// TODO: at this point we would have the order ready to execute
 	// this is where we would add logic to actually place the order if we wanted to
 
-	return orderSplits, err
+	return orderSplits, orderIsFulfilled(order, orderSplits), err
 }

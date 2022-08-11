@@ -46,8 +46,53 @@ task lint
 ```bash
 $ curl --request POST \
     --url http://localhost:8080/order/limit \
-    --data '{"symbol": "LTCBTC", "order_size": 2, "price": 0.0001}'
-{"data":[{"update_id":1742566312,"bid_price":0.002574,"bid_quantity":2}],"error":null,"message":"Order successfully executed"}
+    --data '{"symbol": "LTCBTC", "order_size": 500, "price": 0.0001}'
+```
+
+In this particular case I got back an order fulfillment that looks as such:
+
+```json
+{
+  "data": [
+    {
+      "update_id": 1742578110,
+      "bid_price": 0.002577,
+      "bid_quantity": 32.58
+    },
+    {
+      "update_id": 1742578110,
+      "bid_price": 0.002576,
+      "bid_quantity": 61.087
+    },
+    {
+      "update_id": 1742578110,
+      "bid_price": 0.002573,
+      "bid_quantity": 154.488
+    },
+    {
+      "update_id": 1742578110,
+      "bid_price": 0.002572,
+      "bid_quantity": 80.964
+    },
+    {
+      "update_id": 1742578110,
+      "bid_price": 0.002571,
+      "bid_quantity": 29.915
+    },
+    {
+      "update_id": 1742578110,
+      "bid_price": 0.002568,
+      "bid_quantity": 70.09
+    },
+    {
+      "update_id": 1742578110,
+      "bid_price": 0.00255,
+      "bid_quantity": 70.87599999999998
+    }
+  ],
+  "error": null,
+  "message": "Order successfully executed"
+}
 ```
 
 **Note**: note that the exact response you get back will be heavily dependent on several factors:
@@ -59,8 +104,8 @@ $ curl --request POST \
 
 - [x] create an HTTP endpoint that executes an order (POST endpoint that takes a symbol, order size and price as input)
 - [x] connect to the binance order book ticker stream (https://binance-docs.github.io/apidocs/spot/en/#individual-symbol-book-ticker-streams)
+- [x] write order fulfillment logic
 - [ ] write binance package unit tests
 - [ ] write to sqlite-db: output summary on how the order was split
 - [ ] write database package unit tests
 - [ ] add timeout to the trade execution
-- [ ] add simple UI using next.js

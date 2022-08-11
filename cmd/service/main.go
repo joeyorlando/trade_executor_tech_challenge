@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joeyorlando/trade_executor_tech_challenge/internal/binance"
@@ -26,7 +28,7 @@ func executeLimitOrder(c *gin.Context, bin binance.Binance) {
 			"data":    nil,
 		})
 	} else {
-		orderSplits, err := bin.ExecuteLimitOrder(binance.LimitOrder{
+		orderSplits, fulfilled, err := bin.FulfillLimitOrder(binance.LimitOrder{
 			Symbol:   req.Symbol,
 			Quantity: req.OrderSize,
 			Price:    req.Price,
@@ -38,10 +40,16 @@ func executeLimitOrder(c *gin.Context, bin binance.Binance) {
 				"message": nil,
 				"data":    nil,
 			})
+		} else if !fulfilled {
+			c.JSON(http.StatusOK, gin.H{
+				"error":   nil,
+				"message": "Order not fulfilled",
+				"data":    []binance.OrderSplit{},
+			})
 		} else {
 			c.JSON(http.StatusOK, gin.H{
 				"error":   nil,
-				"message": "Order successfully executed",
+				"message": "Order successfully fulfilled",
 				"data":    orderSplits,
 			})
 		}
@@ -51,7 +59,13 @@ func executeLimitOrder(c *gin.Context, bin binance.Binance) {
 
 func main() {
 	httpPort := os.Getenv("HTTP_PORT")
-	bin := binance.NewBinance()
+	orderTimeoutSeconds, err := strconv.Atoi(os.Getenv("ORDER_TIMEOUT_SECONDS"))
+
+	if err != nil {
+		log.Fatal("ORDER_TIMEOUT_SECONDS must be an integer")
+	}
+
+	bin := binance.NewBinance(orderTimeoutSeconds)
 
 	router := gin.Default()
 	router.POST("/order/limit", func(c *gin.Context) {
