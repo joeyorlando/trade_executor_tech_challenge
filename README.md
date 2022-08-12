@@ -95,6 +95,7 @@ In addition some other minor, but still important, details that I would change a
 - monitoring - I would setup Datadog to add enough metrics to have a consistent and reliable "heartbeat" on the service. In addition there would be PagerDuty alerts configured in Datadog to immediately alert the team in the event that certain metrics are outside configured thresholds
 - logging - exporting logs to a permanent solution which would make future analysis/debugging much easier (ex. Graylog)
 - tracing - implementing a tool such as HoneyComb, again this is something that would make performance monitoring and debugging much simpler
+- request validation - right now I'm simply assuming that the HTTP endpoint client will pass in data that isn't bogus. In a real world application this should be validated and in the event that there are any request errors, the client should be given useful information as to what exactly those errors are.
 
 ## Still todo
 
@@ -103,5 +104,5 @@ In addition some other minor, but still important, details that I would change a
 - [x] write order fulfillment logic
 - [x] add timeout to the trade execution
 - [x] write to sqlite-db: output summary on how the order was split
+- [x] add comments to functions
 - [ ] write unit tests
-- [ ] add comments to functions

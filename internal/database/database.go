@@ -13,12 +13,14 @@ import (
 
 const driverName = "sqlite3"
 
+// A Database represents a SQL database configuration
 type Database struct {
 	ConnectionPool      *sql.DB
 	DatabaseName        string
 	MigrationsDirectory string
 }
 
+// NewDatabase configures a SQL connection pool and returns a Database
 func NewDatabase(databaseFilePath, databaseName, migrationsDirectory string) (Database, error) {
 	db, err := sql.Open(driverName, databaseFilePath)
 	return Database{
@@ -28,6 +30,7 @@ func NewDatabase(databaseFilePath, databaseName, migrationsDirectory string) (Da
 	}, err
 }
 
+// RunMigrations trys to run the .sql migrations contained within the configured db.MigrationsDirectory
 func (db *Database) RunMigrations() error {
 	driver, err := sqlite3.WithInstance(db.ConnectionPool, &sqlite3.Config{})
 	if err != nil {
@@ -43,6 +46,8 @@ func (db *Database) RunMigrations() error {
 	return m.Up()
 }
 
+// PersistFulfilledOrder takes an order and its associated order splits and persists this data
+// to the configured database. The SQL statements are run inside of a transaction.
 func (db *Database) PersistFulfilledOrder(order binance.LimitOrder, orderSplits []binance.OrderSplit) error {
 	var orderId int
 	dbConn := db.ConnectionPool

@@ -9,18 +9,25 @@ import (
 	"github.com/joeyorlando/trade_executor_tech_challenge/internal/database"
 )
 
+// A LimitOrderRequest represents the incoming request that the POST /order/limit
+// endpoint should receive
 type LimitOrderRequest struct {
 	Symbol    string  `json:"symbol"`
 	OrderSize float64 `json:"order_size"`
 	Price     float64 `json:"price"`
 }
 
+// A Server represents an HTTP server
 type Server struct {
-	Port     string
+	Port     string // the port that the http server should listen on
 	Binance  binance.Binance
 	Database database.Database
 }
 
+// fulfillLimitOrder handles requests to the POST /order/limit HTTP endpoint
+// given the LimitOrderRequest request, it trys to fulfill an order using the
+// requested information. If an order is placed, the order details are persisted
+// to the database
 func (s *Server) fulfillLimitOrder(c *gin.Context) {
 	var req LimitOrderRequest
 
@@ -64,12 +71,15 @@ func (s *Server) fulfillLimitOrder(c *gin.Context) {
 	}
 }
 
+// Run starts the HTTP server, binding handlers to endpoints and running
+// on the configured port
 func (s *Server) Run() {
 	router := gin.Default()
 	router.POST("/order/limit", s.fulfillLimitOrder)
 	router.Run(fmt.Sprintf(":%s", s.Port))
 }
 
+// NewServer configures and returns a new Server
 func NewServer(port string, bin binance.Binance, db database.Database) Server {
 	return Server{
 		Port:     port,
