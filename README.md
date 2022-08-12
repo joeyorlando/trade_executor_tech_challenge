@@ -97,6 +97,10 @@ In addition some other minor, but still important, details that I would change a
 - tracing - implementing a tool such as HoneyComb, again this is something that would make performance monitoring and debugging much simpler
 - request validation - right now I'm simply assuming that the HTTP endpoint client will pass in data that isn't bogus. In a real world application this should be validated and in the event that there are any request errors, the client should be given useful information as to what exactly those errors are.
 
+### Questions
+
+1. Why does an order have > 1 bids? In my experience trading on my own personal portfolio's trading platform, this doesn't seem to make much sense from a data-modelling point-of-view.
+
 ## Still todo
 
 - [x] create an HTTP endpoint that executes an order (POST endpoint that takes a symbol, order size and price as input)
